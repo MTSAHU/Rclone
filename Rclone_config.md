@@ -155,3 +155,53 @@ fusermount -u /home/amits/Gdrive
 ```
 
 *(Replace the path with your exact mount point if different).*
+
++++++++------------------++++++++++++++++++++++++++------------++++++++++++++++++++++++++++++++++++
+
+You want the mount to start **automatically at boot** but **stop at shutdown** without any manual commands. Here's the simple setup:
+
+## Setup for Auto-Mount at Boot (Without Lingering)
+
+**Step 1:** Create the service file:
+
+```bash
+nano ~/.config/systemd/user/rclone_gdrive.service
+```
+
+**Step 2:** Add this content:
+
+```ini
+[Unit]
+Description=Rclone Mount Google Drive
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/rclone mount Gdrive: /home/amits/Gdrive --vfs-cache-mode writes
+ExecStop=/bin/fusermount -u /home/amits/Gdrive
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=graphical-session.target
+```
+
+**Key part:** `WantedBy=graphical-session.target` means: start this service when your KDE Plasma desktop session starts.[1]
+
+**Step 3:** Enable and start it:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable rclone_gdrive
+systemctl --user start rclone_gdrive
+```
+
+**That's it. Now:**
+- ✅ When you **start your laptop** → mount automatically loads
+- ✅ When you **shutdown** → mount stops (no lingering)
+- ✅ **No bash commands needed** to use the mount
+- ✅ No background resource consumption when laptop is off[1]
+
+Done. Just login to your KDE desktop and the mount will be ready automatically.[1]
+
+[1](https://forum.rclone.org/t/rclone-mount-w-systemd-when-user-logs-in-unmounts-logout/15101)
